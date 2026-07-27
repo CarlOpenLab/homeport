@@ -3,8 +3,8 @@
  * @description 站点新增 / 编辑弹窗：antdv-next Modal + Form。
  * 编辑模式下额外提供删除入口（带 Popconfirm 二次确认）。
  */
-import { reactive, ref, watch } from "vue";
-import { Modal, Form, FormItem, Input, Select, SelectOption, Button, Popconfirm, Alert, message } from "antdv-next";
+import { computed, reactive, ref, watch } from "vue";
+import { Modal, Form, FormItem, Input, Select, Button, Popconfirm, Alert, message } from "antdv-next";
 import { useHomeport } from "../composables/useHomeport.js";
 
 const props = defineProps({
@@ -28,6 +28,16 @@ const form = reactive({
   tags: ""
 });
 const formError = ref("");
+
+/** 下拉组件不透传 Option 子节点，统一通过 options 属性提供选项。 */
+const spaceOptions = computed(() => config.spaces.map((space) => ({
+  value: space.key,
+  label: space.label
+})));
+const categoryOptions = computed(() => config.categories.map((category) => ({
+  value: category.name,
+  label: category.name
+})));
 
 watch(
   () => props.open,
@@ -101,14 +111,10 @@ function onDelete() {
       </FormItem>
       <div class="form-row">
         <FormItem label="空间">
-          <Select v-model:value="form.space">
-            <SelectOption v-for="space in config.spaces" :key="space.key" :value="space.key">{{ space.label }}</SelectOption>
-          </Select>
+          <Select v-model:value="form.space" :options="spaceOptions" />
         </FormItem>
         <FormItem label="集合">
-          <Select v-model:value="form.category">
-            <SelectOption v-for="category in config.categories" :key="category.name" :value="category.name">{{ category.name }}</SelectOption>
-          </Select>
+          <Select v-model:value="form.category" :options="categoryOptions" />
         </FormItem>
       </div>
       <FormItem label="标签">
