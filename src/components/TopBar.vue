@@ -93,18 +93,9 @@ function onSearchBlur() {
     <div class="search-wrap">
       <Search :size="17" class="search-icon" aria-hidden="true" />
       <label class="sr-only" for="search-input">搜索站点、标签或域名</label>
-      <input
-        id="search-input"
-        v-model="state.query"
-        type="search"
-        autocomplete="off"
-        placeholder="搜索站点、标签或域名"
-        role="combobox"
-        :aria-expanded="showSuggestions"
-        @focus="searchFocused = true"
-        @blur="onSearchBlur"
-        @keydown="onSearchKeydown"
-      >
+      <input id="search-input" v-model="state.query" type="search" autocomplete="off" placeholder="搜索站点、标签或域名"
+        role="combobox" :aria-expanded="showSuggestions" @focus="searchFocused = true" @blur="onSearchBlur"
+        @keydown="onSearchKeydown">
       <button v-if="state.query" class="search-clear" type="button" aria-label="清除搜索" @mousedown.prevent="clearQuery">
         <X :size="15" />
       </button>
@@ -112,17 +103,10 @@ function onSearchBlur() {
       <Transition name="pop">
         <div v-if="showSuggestions" class="search-suggestions" role="listbox">
           <template v-if="suggestions.length">
-            <button
-              v-for="(site, index) in suggestions"
-              :key="site.id"
-              class="suggestion-item"
-              :class="{ 'is-active': index === activeIndex }"
-              type="button"
-              role="option"
-              :aria-selected="index === activeIndex"
-              @mousedown.prevent="openSuggestion(site)"
-              @mousemove="activeIndex = index"
-            >
+            <button v-for="(site, index) in suggestions" :key="site.id" class="suggestion-item"
+              :class="{ 'is-active': index === activeIndex }" type="button" role="option"
+              :aria-selected="index === activeIndex" @mousedown.prevent="openSuggestion(site)"
+              @mousemove="activeIndex = index">
               <img :src="site.favicon" width="28" height="28" alt="">
               <span class="suggestion-copy">
                 <strong>{{ site.name }}</strong>
@@ -154,21 +138,31 @@ function onSearchBlur() {
       </Segmented>
 
       <Tooltip :title="state.theme === 'dark' ? '切换到浅色' : '切换到深色'">
-        <button
-          class="icon-ghost"
-          type="button"
-          :aria-label="state.theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
-          @click="state.theme = state.theme === 'dark' ? 'light' : 'dark'"
-        >
+        <button class="icon-ghost" type="button" :aria-label="state.theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
+          @click="state.theme = state.theme === 'dark' ? 'light' : 'dark'">
           <Sun v-if="state.theme === 'dark'" :size="18" />
           <Moon v-else :size="18" />
         </button>
       </Tooltip>
 
       <Button type="primary" class="add-site-button" @click="emit('add-site')">
-        <template #icon><Plus :size="16" /></template>
+        <template #icon>
+          <Plus :size="16" />
+        </template>
         <span class="add-site-label">添加站点</span>
       </Button>
     </div>
   </header>
 </template>
+
+<style>
+.view-segmented .ant-segmented-item-label {
+  display: flex;
+}
+
+.view-segmented .ant-segmented-item-label>span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>
