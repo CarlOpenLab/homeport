@@ -28,7 +28,7 @@ npm run preview
 ## 技术栈
 
 - Vue 3 + Vite
-- [antdv-next](https://www.antdv-next.com/)（Ant Design for Vue 新一代组件库）
+- [antdv-next](https://www.antdv-next.com/)
 - lucide-vue-next
 
 ## 说明
