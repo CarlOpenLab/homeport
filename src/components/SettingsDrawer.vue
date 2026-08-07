@@ -4,8 +4,8 @@
  * 以及恢复示例内容（Popconfirm 二次确认）。
  */
 import { ref } from "vue";
-import { Drawer, Button, RadioGroup, Radio, Popconfirm, message } from "antdv-next";
-import { Download, Copy, Upload, FileJson2 } from "lucide-vue-next";
+import { Drawer, Button, RadioGroup, Radio, Popconfirm, Modal, TextArea as Textarea, message } from "antdv-next";
+import { Download, Copy, Upload, FileJson2, ClipboardPaste } from "lucide-vue-next";
 import { useHomeport } from "../composables/useHomeport.js";
 
 defineProps({
@@ -14,10 +14,16 @@ defineProps({
 });
 const emit = defineEmits(["update:open"]);
 
-const { config, exportConfig, copyConfig, importConfig, resetToSample } = useHomeport();
+const { config, exportConfig, copyConfig, importConfig, importConfigFromText, resetToSample } = useHomeport();
 
 const importMode = ref("merge");
 const fileInput = ref(null);
+
+/** 粘贴 JSON 导入弹窗状态 */
+const pasteOpen = ref(false);
+const pasteText = ref("");
+/** 弹窗内独立的导入方式，打开时继承抽屉里的 importMode，取消不影响外部 */
+const pasteMode = ref("merge");
 
 /**
  * @description 处理选中的 JSON 文件导入。
@@ -34,6 +40,35 @@ async function onFileChange(event) {
     message.error("无法导入：文件格式不正确");
   } finally {
     event.target.value = "";
+  }
+}
+
+/**
+ * @description 打开粘贴 JSON 导入弹窗并清空上次内容。
+ * @returns {void}
+ */
+function openPaste() {
+  pasteText.value = "";
+  pasteMode.value = importMode.value;
+  pasteOpen.value = true;
+}
+
+/**
+ * @description 提交粘贴的 JSON 文本导入；成功后关闭弹窗，失败时提示并保留内容。
+ * @returns {void}
+ */
+function onPasteImport() {
+  const text = pasteText.value.trim();
+  if (!text) {
+    message.warning("请先粘贴配置 JSON");
+    return;
+  }
+  try {
+    importConfigFromText(text, pasteMode.value);
+    message.success(pasteMode.value === "replace" ? "配置已覆盖导入" : "配置已合并导入");
+    pasteOpen.value = false;
+  } catch (error) {
+    message.error("无法导入：JSON 格式不正确或缺少 sites 字段");
   }
 }
 
@@ -93,10 +128,16 @@ function onReset() {
             <span class="radio-copy"><strong>覆盖</strong><small>用配置包替换当前内容</small></span>
           </Radio>
         </RadioGroup>
-        <Button block @click="fileInput.click()">
-          <template #icon><Upload :size="15" /></template>
-          选择 JSON 文件
-        </Button>
+        <div class="settings-actions">
+          <Button block @click="fileInput.click()">
+            <template #icon><Upload :size="15" /></template>
+            选择 JSON 文件
+          </Button>
+          <Button block @click="openPaste">
+            <template #icon><ClipboardPaste :size="15" /></template>
+            粘贴 JSON 导入
+          </Button>
+        </div>
         <input ref="fileInput" type="file" accept="application/json,.json" hidden @change="onFileChange">
       </section>
 
@@ -116,5 +157,29 @@ function onReset() {
         </Popconfirm>
       </section>
     </div>
+
+    <Modal
+      v-model:open="pasteOpen"
+      title="粘贴 JSON 导入"
+      ok-text="导入"
+      cancel-text="取消"
+      :width="560"
+      @ok="onPasteImport"
+    >
+      <RadioGroup v-model:value="pasteMode" class="import-mode">
+        <Radio value="merge">
+          <span class="radio-copy"><strong>合并</strong><small>保留现有站点，跳过重复网址</small></span>
+        </Radio>
+        <Radio value="replace">
+          <span class="radio-copy"><strong>覆盖</strong><small>用配置包替换当前内容</small></span>
+        </Radio>
+      </RadioGroup>
+      <Textarea
+        v-model:value="pasteText"
+        :rows="12"
+        placeholder='{ "sites": [...], "spaces": [...], "categories": [...] }'
+        class="paste-textarea"
+      />
+    </Modal>
   </Drawer>
 </template>

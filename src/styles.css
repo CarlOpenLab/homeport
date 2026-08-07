@@ -1087,6 +1087,13 @@ body {
   margin: 0;
 }
 
+/* ---------- 粘贴 JSON 导入弹窗 ---------- */
+
+.paste-textarea {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 12.5px;
+}
+
 /* ---------- 空间与集合管理弹窗 ---------- */
 
 .manage-list {

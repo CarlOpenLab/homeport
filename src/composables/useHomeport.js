@@ -616,15 +616,13 @@ function applyConfig(next) {
 }
 
 /**
- * @description 从 JSON 文件导入配置。合并模式：站点按 URL 去重，空间按 key、集合按名称取并集；
- * 覆盖模式：整体替换。
- * @param {File} file - 用户选择的 JSON 文件
+ * @description 将已解析的配置对象按合并或覆盖方式写入当前配置。合并模式：站点按 URL
+ * 去重，空间按 key、集合按名称取并集；覆盖模式：整体替换。
+ * @param {object} incoming - 经 sanitizeConfig 清洗后的配置对象
  * @param {"merge"|"replace"} mode - 导入方式
- * @returns {Promise<void>} 导入完成的 Promise
- * @throws {Error} 文件不是合法 JSON 时抛出
+ * @returns {void}
  */
-async function importConfig(file, mode) {
-  const incoming = sanitizeConfig(JSON.parse(await file.text()));
+function applyImport(incoming, mode) {
   if (mode === "replace") {
     applyConfig(incoming);
   } else {
@@ -636,6 +634,34 @@ async function importConfig(file, mode) {
     config.sites = config.sites.concat(incoming.sites.filter((site) => !existingUrls.has(site.url)));
   }
   persist();
+}
+
+/**
+ * @description 从 JSON 文本导入配置（弹窗粘贴导入共用）。合并模式：站点按 URL 去重，
+ * 空间按 key、集合按名称取并集；覆盖模式：整体替换。
+ * @param {string} text - JSON 配置文本
+ * @param {"merge"|"replace"} mode - 导入方式
+ * @returns {void}
+ * @throws {Error} 文本不是合法 JSON 或缺少 sites 字段时抛出
+ */
+function importConfigFromText(text, mode) {
+  const parsed = JSON.parse(text);
+  if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.sites)) {
+    throw new Error("invalid config");
+  }
+  applyImport(sanitizeConfig(parsed), mode);
+}
+
+/**
+ * @description 从 JSON 文件导入配置。合并模式：站点按 URL 去重，空间按 key、集合按名称取并集；
+ * 覆盖模式：整体替换。
+ * @param {File} file - 用户选择的 JSON 文件
+ * @param {"merge"|"replace"} mode - 导入方式
+ * @returns {Promise<void>} 导入完成的 Promise
+ * @throws {Error} 文件不是合法 JSON 时抛出
+ */
+async function importConfig(file, mode) {
+  importConfigFromText(await file.text(), mode);
 }
 
 /**
@@ -688,6 +714,7 @@ const store = {
   exportConfig,
   copyConfig,
   importConfig,
+  importConfigFromText,
   resetToSample,
   clearFilters
 };
