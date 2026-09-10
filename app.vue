@@ -23,15 +23,16 @@ const ui = reactive({
   manageTab: manageParam === "categories" ? "categories" : "spaces"
 });
 
-/** antdv-next 主题：暖琥珀主色 + Inter 字体，深色模式切换算法 */
+/** antdv-next 主题：暖琥珀主色 + 现代无衬线字体，深浅模式切换算法 */
 const antdTheme = computed(() => ({
   algorithm: state.theme === "dark" ? theme.darkAlgorithm : theme.defaultAlgorithm,
   token: {
     colorPrimary: "#d97706",
     colorInfo: "#2563eb",
-    colorError: "#dc2626",
-    borderRadius: 8,
-    fontFamily: "'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif"
+    colorError: "#ef4444",
+    borderRadius: 10,
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif",
+    ...(state.theme === "dark" ? { colorBgContainer: "#161922", colorBgElevated: "#1c212c" } : {})
   }
 }));
 

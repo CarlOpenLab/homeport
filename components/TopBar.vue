@@ -1,19 +1,41 @@
 <script setup>
 /**
- * @description 顶栏：移动端菜单按钮、带联想的搜索框、视图切换（antdv-next Segmented）、
- * 主题切换与「添加站点」主按钮。
+ * @description 顶栏：移动端菜单按钮、带快捷键与联想的高级搜索框、视图切换、
+ * 主题切换与「添加站点」主按钮。已支持 ⌘K / Ctrl+K 全局快捷激活。
  */
-import { computed, ref } from "vue";
+import { computed, ref, onMounted, onUnmounted } from "vue";
 import { Button, Segmented, Tooltip } from "antdv-next";
-import { PanelLeft, Search, X, Grid2x2, Rows3, Moon, Sun, Plus, ArrowUpRight } from "lucide-vue-next";
+import { PanelLeft, Search, X, Grid2x2, Rows3, Moon, Sun, Plus, ArrowUpRight, CornerDownLeft } from "lucide-vue-next";
 import { useHomeport, getDomain, matchesQuery } from "../composables/useHomeport.js";
 
 const emit = defineEmits(["open-sidebar", "add-site"]);
 
 const { state, config, markSiteUsed } = useHomeport();
 
+const searchInputRef = ref(null);
 const searchFocused = ref(false);
 const activeIndex = ref(-1);
+const isMac = ref(true);
+
+onMounted(() => {
+  if (typeof navigator !== "undefined") {
+    isMac.value = /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent);
+  }
+
+  // 注册全局 ⌘K / Ctrl+K 及 '/' 快速搜索快捷键
+  function handleGlobalKeyDown(e) {
+    const isCtrlOrMeta = isMac.value ? e.metaKey : e.ctrlKey;
+    if ((isCtrlOrMeta && (e.key === "k" || e.key === "K")) || (e.key === "/" && !["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName))) {
+      e.preventDefault();
+      searchInputRef.value?.focus();
+    }
+  }
+
+  window.addEventListener("keydown", handleGlobalKeyDown);
+  onUnmounted(() => {
+    window.removeEventListener("keydown", handleGlobalKeyDown);
+  });
+});
 
 /** 搜索联想：与主列表共用 matchesQuery 语义，命中前 5 条 */
 const suggestions = computed(() => {
@@ -48,6 +70,11 @@ function openSuggestion(site) {
  * @returns {void}
  */
 function onSearchKeydown(event) {
+  if (event.key === "Escape") {
+    searchFocused.value = false;
+    searchInputRef.value?.blur();
+    return;
+  }
   if (!showSuggestions.value) return;
   const count = suggestions.value.length;
   if (event.key === "ArrowDown" && count) {
@@ -59,8 +86,6 @@ function onSearchKeydown(event) {
   } else if (event.key === "Enter" && activeIndex.value >= 0 && suggestions.value[activeIndex.value]) {
     event.preventDefault();
     openSuggestion(suggestions.value[activeIndex.value]);
-  } else if (event.key === "Escape") {
-    searchFocused.value = false;
   }
 }
 
@@ -71,6 +96,7 @@ function onSearchKeydown(event) {
 function clearQuery() {
   state.query = "";
   activeIndex.value = -1;
+  searchInputRef.value?.focus();
 }
 
 /**
@@ -90,35 +116,67 @@ function onSearchBlur() {
       <PanelLeft :size="19" />
     </button>
 
-    <div class="search-wrap">
-      <Search :size="17" class="search-icon" aria-hidden="true" />
+    <div class="search-wrap" :class="{ 'is-focused': searchFocused }">
+      <Search :size="16" class="search-icon" aria-hidden="true" />
       <label class="sr-only" for="search-input">搜索站点、标签或域名</label>
-      <input id="search-input" v-model="state.query" type="search" autocomplete="off" placeholder="搜索站点、标签或域名"
-        role="combobox" :aria-expanded="showSuggestions" @focus="searchFocused = true" @blur="onSearchBlur"
-        @keydown="onSearchKeydown">
-      <button v-if="state.query" class="search-clear" type="button" aria-label="清除搜索" @mousedown.prevent="clearQuery">
-        <X :size="15" />
-      </button>
+      <input
+        id="search-input"
+        ref="searchInputRef"
+        v-model="state.query"
+        type="search"
+        autocomplete="off"
+        placeholder="搜索站点、分类、标签或域名..."
+        role="combobox"
+        :aria-expanded="showSuggestions"
+        @focus="searchFocused = true"
+        @blur="onSearchBlur"
+        @keydown="onSearchKeydown"
+      >
+      <div class="search-suffix">
+        <button
+          v-if="state.query"
+          class="search-clear"
+          type="button"
+          aria-label="清除搜索"
+          @mousedown.prevent="clearQuery"
+        >
+          <X :size="14" />
+        </button>
+        <kbd v-else class="search-kbd" title="按快捷键快速搜索">{{ isMac ? "⌘ K" : "Ctrl K" }}</kbd>
+      </div>
 
       <Transition name="pop">
         <div v-if="showSuggestions" class="search-suggestions" role="listbox">
+          <div class="suggestions-header">
+            <span>快速直达</span>
+            <span class="suggestions-hint"><CornerDownLeft :size="12" /> 回车访问</span>
+          </div>
           <template v-if="suggestions.length">
-            <button v-for="(site, index) in suggestions" :key="site.id" class="suggestion-item"
-              :class="{ 'is-active': index === activeIndex }" type="button" role="option"
-              :aria-selected="index === activeIndex" @mousedown.prevent="openSuggestion(site)"
-              @mousemove="activeIndex = index">
-              <img :src="site.favicon" width="28" height="28" alt="">
+            <button
+              v-for="(site, index) in suggestions"
+              :key="site.id"
+              class="suggestion-item"
+              :class="{ 'is-active': index === activeIndex }"
+              type="button"
+              role="option"
+              :aria-selected="index === activeIndex"
+              @mousedown.prevent="openSuggestion(site)"
+              @mousemove="activeIndex = index"
+            >
+              <div class="suggestion-icon-wrap">
+                <img :src="site.favicon" width="22" height="22" alt="">
+              </div>
               <span class="suggestion-copy">
                 <strong>{{ site.name }}</strong>
-                <small>{{ getDomain(site.url) }}</small>
+                <small>{{ getDomain(site.url) }} · {{ site.category }}</small>
               </span>
               <ArrowUpRight :size="14" class="suggestion-arrow" />
             </button>
           </template>
           <div v-else class="suggestion-item is-empty" role="option" aria-disabled="true">
             <span class="suggestion-copy">
-              <strong>没有直接匹配</strong>
-              <small>主列表会继续显示筛选结果</small>
+              <strong>没有找到对应入口</strong>
+              <small>主列表会根据关键词继续模糊匹配</small>
             </span>
           </div>
         </div>
@@ -140,10 +198,14 @@ function onSearchBlur() {
         </Segmented>
 
         <Tooltip :title="state.theme === 'dark' ? '切换到浅色' : '切换到深色'">
-          <button class="icon-ghost theme-toggle" type="button" :aria-label="state.theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
-            @click="state.theme = state.theme === 'dark' ? 'light' : 'dark'">
-            <Sun v-if="state.theme === 'dark'" :size="18" />
-            <Moon v-else :size="18" />
+          <button
+            class="icon-ghost theme-toggle"
+            type="button"
+            :aria-label="state.theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
+            @click="state.theme = state.theme === 'dark' ? 'light' : 'dark'"
+          >
+            <Sun v-if="state.theme === 'dark'" :size="17" />
+            <Moon v-else :size="17" />
           </button>
         </Tooltip>
       </div>

@@ -14,11 +14,12 @@ const sortLabels = { manual: "手动排序", name: "名称顺序", recent: "最�
 
 /** 「全部」加上配置中的集合，统一渲染为一排 chips */
 const chips = computed(() => [
-  { key: "all", label: "全部", count: config.sites.length },
+  { key: "all", label: "全部", count: config.sites.length, color: null },
   ...config.categories.map((category) => ({
     key: category.name,
     label: category.name,
-    count: categoryCounts.value[category.name] || 0
+    count: categoryCounts.value[category.name] || 0,
+    color: category.color
   }))
 ]);
 
@@ -43,7 +44,9 @@ function onSortSelect(info) {
         type="button"
         @click="state.activeCategory = chip.key"
       >
-        {{ chip.label }}<span class="chip-count">{{ chip.count }}</span>
+        <span v-if="chip.color" class="chip-color-dot" :style="{ '--chip-color': chip.color }"></span>
+        <span class="chip-label">{{ chip.label }}</span>
+        <span class="chip-count">{{ chip.count }}</span>
       </button>
     </div>
 
