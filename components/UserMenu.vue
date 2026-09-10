@@ -37,10 +37,10 @@ onMounted(async () => {
     const urlParams = new URLSearchParams(window.location.search);
     const authError = urlParams.get("auth_error");
     if (authError) {
+      const decoded = decodeURIComponent(authError);
       message.error({
-        content:
-          "GitHub 登录失败：尚未在 Vercel 中配置 NUXT_OAUTH_GITHUB_CLIENT_ID 与 SECRET 环境变量，请查看配置指南。",
-        duration: 8
+        content: `GitHub 登录失败：${decoded}`,
+        duration: 10
       });
       // 抹除 URL 中的报错参数以保持干净
       window.history.replaceState({}, "", window.location.pathname);
