@@ -1,28 +1,34 @@
-import { createClient } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
 
-const restUrl =
-  process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const restToken =
-  process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+function getRedisClient() {
+  const url =
+    process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token =
+    process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
 
-const kv =
-  restUrl && restToken ? createClient({ url: restUrl, token: restToken }) : null;
+  if (url && token) {
+    return new Redis({ url, token });
+  }
+  return null;
+}
+
+const redis = getRedisClient();
 
 /**
  * @description 获取指定用户的云端导航配置。
- * 自动识别环境：支持 Vercel KV / Upstash Redis 环境变量，本地开发降级到 Nitro 内置存储。
+ * 自动识别环境：生产环境支持 Upstash Redis / Vercel KV，本地开发自动降级到 Nitro 内置存储。
  * @param {string} userId - 用户唯一标识
  * @returns {Promise<object|null>} 用户的导航配置对象
  */
 export async function getUserConfig(userId: string) {
   if (!userId) return null;
 
-  if (kv) {
+  if (redis) {
     try {
-      const data = await kv.get(`homeport:user:${userId}:config`);
+      const data = await redis.get(`homeport:user:${userId}:config`);
       return data || null;
     } catch (error) {
-      console.error("[Storage] KV/Upstash read error:", error);
+      console.error("[Storage] Upstash Redis read error:", error);
     }
   }
 
@@ -45,12 +51,12 @@ export async function getUserConfig(userId: string) {
 export async function setUserConfig(userId: string, data: any) {
   if (!userId || !data) return false;
 
-  if (kv) {
+  if (redis) {
     try {
-      await kv.set(`homeport:user:${userId}:config`, data);
+      await redis.set(`homeport:user:${userId}:config`, data);
       return true;
     } catch (error) {
-      console.error("[Storage] KV/Upstash write error:", error);
+      console.error("[Storage] Upstash Redis write error:", error);
     }
   }
 
