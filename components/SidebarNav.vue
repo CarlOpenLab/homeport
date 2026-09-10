@@ -55,7 +55,15 @@ function goHome() {
   <aside class="sidebar" :class="{ 'is-open': open }" aria-label="空间与集合导航">
     <div class="brand-row">
       <button class="brand" type="button" aria-label="返回全部站点" @click="goHome">
-        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32" class="brand-logo" aria-hidden="true">
+          <g fill="none" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M 22 72 C 38 84, 62 84, 78 72" />
+            <line x1="50" y1="20" x2="50" y2="70" />
+            <path d="M 50 32 L 26 44 L 26 62 L 50 50" />
+            <path d="M 50 32 L 74 44 L 74 62 L 50 50" />
+            <circle cx="50" cy="20" r="1.5" fill="currentColor" />
+          </g>
+        </svg>
         <span class="brand-copy">
           <strong>泊页</strong>
           <small>HOMEPORT</small>

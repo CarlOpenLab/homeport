@@ -177,25 +177,22 @@ body {
   border-radius: var(--radius-sm);
 }
 
-.brand-mark {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 26px;
-  padding: 5px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  border-radius: 8px;
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  color: var(--color-text, #0f172a);
+  flex-shrink: 0;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
 }
 
-.brand-mark span {
-  width: 4px;
-  border-radius: 2px;
-  background: #fff;
+[data-theme="dark"] .brand-logo {
+  color: #f1f5f9;
 }
 
-.brand-mark span:nth-child(1) { height: 8px; }
-.brand-mark span:nth-child(2) { height: 14px; }
-.brand-mark span:nth-child(3) { height: 11px; }
+.brand:hover .brand-logo {
+  transform: scale(1.08);
+  color: var(--color-primary, #d97706);
+}
 
 .brand-copy {
   display: flex;
