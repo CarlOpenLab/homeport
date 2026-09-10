@@ -423,4 +423,15 @@ async function handleLogout() {
   flex-direction: column;
   gap: 10px;
 }
+
+@media (max-width: 640px) {
+  .user-name,
+  .auth-btn span {
+    display: none;
+  }
+
+  .user-pill {
+    padding: 3px 6px 3px 3px;
+  }
+}
 </style>

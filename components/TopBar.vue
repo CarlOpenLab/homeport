@@ -126,25 +126,31 @@ function onSearchBlur() {
     </div>
 
     <div class="topbar-actions">
-      <Segmented v-model:value="state.view" :options="viewOptions" class="view-segmented">
-        <template #labelRender="option">
-          <Tooltip :title="option.title">
-            <span class="segment-icon" :aria-label="option.title">
-              <Grid2x2 v-if="option.value === 'grid'" :size="16" />
-              <Rows3 v-else :size="16" />
-            </span>
-          </Tooltip>
-        </template>
-      </Segmented>
+      <!-- 偏好与外观工具组 -->
+      <div class="topbar-group">
+        <Segmented v-model:value="state.view" :options="viewOptions" class="view-segmented">
+          <template #labelRender="option">
+            <Tooltip :title="option.title">
+              <span class="segment-icon" :aria-label="option.title">
+                <Grid2x2 v-if="option.value === 'grid'" :size="16" />
+                <Rows3 v-else :size="16" />
+              </span>
+            </Tooltip>
+          </template>
+        </Segmented>
 
-      <Tooltip :title="state.theme === 'dark' ? '切换到浅色' : '切换到深色'">
-        <button class="icon-ghost" type="button" :aria-label="state.theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
-          @click="state.theme = state.theme === 'dark' ? 'light' : 'dark'">
-          <Sun v-if="state.theme === 'dark'" :size="18" />
-          <Moon v-else :size="18" />
-        </button>
-      </Tooltip>
+        <Tooltip :title="state.theme === 'dark' ? '切换到浅色' : '切换到深色'">
+          <button class="icon-ghost theme-toggle" type="button" :aria-label="state.theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'"
+            @click="state.theme = state.theme === 'dark' ? 'light' : 'dark'">
+            <Sun v-if="state.theme === 'dark'" :size="18" />
+            <Moon v-else :size="18" />
+          </button>
+        </Tooltip>
+      </div>
 
+      <div class="topbar-divider" aria-hidden="true"></div>
+
+      <!-- 核心操作：添加站点 -->
       <Button type="primary" class="add-site-button" @click="emit('add-site')">
         <template #icon>
           <Plus :size="16" />
@@ -152,7 +158,12 @@ function onSearchBlur() {
         <span class="add-site-label">添加站点</span>
       </Button>
 
-      <UserMenu />
+      <div class="topbar-divider" aria-hidden="true"></div>
+
+      <!-- 用户信息与多端同步独立空间：绝对靠右 -->
+      <div class="topbar-user">
+        <UserMenu />
+      </div>
     </div>
   </header>
 </template>

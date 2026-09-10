@@ -516,7 +516,28 @@ body {
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.topbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 20px;
+  background: var(--border);
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.topbar-user {
+  display: inline-flex;
+  align-items: center;
 }
 
 .segment-icon {
@@ -1260,8 +1281,13 @@ body {
   }
 
   .view-segmented,
-  .add-site-label {
+  .add-site-label,
+  .topbar-divider {
     display: none;
+  }
+
+  .topbar-actions {
+    gap: 8px;
   }
 
   .content {
