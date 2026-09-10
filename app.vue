@@ -5,21 +5,13 @@
  */
 import { computed, reactive, watchEffect } from "vue";
 import { ConfigProvider, theme } from "antdv-next";
-import { useHomeport } from "./composables/useHomeport.js";
-import SidebarNav from "./components/SidebarNav.vue";
-import TopBar from "./components/TopBar.vue";
-import PageHeading from "./components/PageHeading.vue";
-import FilterBar from "./components/FilterBar.vue";
-import SiteGrid from "./components/SiteGrid.vue";
-import SiteFormModal from "./components/SiteFormModal.vue";
-import SettingsDrawer from "./components/SettingsDrawer.vue";
-import ManageModal from "./components/ManageModal.vue";
-import MobileNav from "./components/MobileNav.vue";
 
 const { state } = useHomeport();
 
 /** URL ?manage=spaces|categories 可在启动时直接打开管理弹窗（便于调试与直达） */
-const manageParam = new URLSearchParams(window.location.search).get("manage");
+const manageParam = typeof window !== "undefined"
+  ? new URLSearchParams(window.location.search).get("manage")
+  : null;
 
 /** 弹层与侧栏的界面状态 */
 const ui = reactive({
@@ -44,7 +36,9 @@ const antdTheme = computed(() => ({
 }));
 
 watchEffect(() => {
-  document.documentElement.dataset.theme = state.theme;
+  if (typeof document !== "undefined") {
+    document.documentElement.dataset.theme = state.theme;
+  }
 });
 
 /**

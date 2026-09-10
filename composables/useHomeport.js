@@ -685,6 +685,78 @@ function clearFilters() {
   state.query = "";
 }
 
+/** @type {object} 云端同步状态 */
+const syncState = reactive({
+  isSyncing: false,
+  lastSyncedAt: null,
+  cloudStatus: "idle" // 'idle' | 'synced' | 'error'
+});
+
+/**
+ * @description 将当前本地配置推送到云端专属空间。
+ * @returns {Promise<boolean>} 是否同步成功
+ */
+async function pushToCloud() {
+  syncState.isSyncing = true;
+  try {
+    const res = await $fetch("/api/user/config", {
+      method: "POST",
+      body: config
+    });
+    syncState.lastSyncedAt = res.updatedAt || Date.now();
+    syncState.cloudStatus = "synced";
+    message.success("已成功同步至云端！");
+    return true;
+  } catch (err) {
+    if (err.statusCode === 401) {
+      message.warning("请先登录后再同步");
+    } else {
+      message.error(err.data?.statusMessage || "同步到云端失败");
+    }
+    syncState.cloudStatus = "error";
+    return false;
+  } finally {
+    syncState.isSyncing = false;
+  }
+}
+
+/**
+ * @description 从云端拉取当前用户的配置并载入本地。
+ * @param {boolean} [silent=false] - 是否静默拉取不弹出成功提示
+ * @returns {Promise<boolean>} 是否成功获取并载入
+ */
+async function pullFromCloud(silent = false) {
+  syncState.isSyncing = true;
+  try {
+    const res = await $fetch("/api/user/config", { method: "GET" });
+    if (res?.config) {
+      const sanitized = sanitizeConfig(res.config);
+      config.sites = sanitized.sites;
+      config.spaces = sanitized.spaces;
+      config.categories = sanitized.categories;
+      config.preferences = sanitized.preferences;
+      state.view = sanitized.preferences.view;
+      state.sort = sanitized.preferences.sort;
+      persist();
+      syncState.lastSyncedAt = res.config.updatedAt || Date.now();
+      syncState.cloudStatus = "synced";
+      if (!silent) message.success("已从云端拉取最新配置！");
+      return true;
+    } else {
+      // 云端尚无数据，将当前本地数据自动推上去
+      await pushToCloud();
+      return true;
+    }
+  } catch (err) {
+    if (err.statusCode !== 401) {
+      if (!silent) message.error("从云端拉取配置失败");
+    }
+    return false;
+  } finally {
+    syncState.isSyncing = false;
+  }
+}
+
 watch(
   () => [state.theme, state.view, state.sort],
   () => persist()
@@ -694,6 +766,9 @@ watch(
 const store = {
   config,
   state,
+  syncState,
+  pushToCloud,
+  pullFromCloud,
   spaceCounts,
   categoryCounts,
   filteredSites,

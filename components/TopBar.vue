@@ -151,6 +151,8 @@ function onSearchBlur() {
         </template>
         <span class="add-site-label">添加站点</span>
       </Button>
+
+      <UserMenu />
     </div>
   </header>
 </template>

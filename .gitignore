@@ -5,6 +5,9 @@ node_modules/
 dist/
 dist-ssr/
 *.local
+.nuxt/
+.output/
+.data/
 
 # Editor / OS
 .DS_Store

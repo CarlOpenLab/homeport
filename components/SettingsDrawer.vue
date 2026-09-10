@@ -5,7 +5,7 @@
  */
 import { ref } from "vue";
 import { Drawer, Button, RadioGroup, Radio, Popconfirm, Modal, TextArea as Textarea, message } from "antdv-next";
-import { Download, Copy, Upload, FileJson2, ClipboardPaste } from "lucide-vue-next";
+import { Download, Copy, Upload, FileJson2, ClipboardPaste, Cloud, CloudUpload, CloudDownload, User } from "lucide-vue-next";
 import { useHomeport } from "../composables/useHomeport.js";
 
 defineProps({
@@ -14,7 +14,8 @@ defineProps({
 });
 const emit = defineEmits(["update:open"]);
 
-const { config, exportConfig, copyConfig, importConfig, importConfigFromText, resetToSample } = useHomeport();
+const { user, loggedIn } = useUserSession();
+const { config, syncState, pushToCloud, pullFromCloud, exportConfig, copyConfig, importConfig, importConfigFromText, resetToSample } = useHomeport();
 
 const importMode = ref("merge");
 const fileInput = ref(null);
@@ -81,6 +82,12 @@ function onReset() {
   message.success("已恢复示例内容");
   emit("update:open", false);
 }
+
+function triggerLogin() {
+  if (typeof window !== "undefined") {
+    window.location.href = "/api/auth/github";
+  }
+}
 </script>
 
 <template>
@@ -92,6 +99,37 @@ function onReset() {
     @close="emit('update:open', false)"
   >
     <div class="drawer-body">
+      <section class="settings-section">
+        <div class="settings-title-row">
+          <div>
+            <h3>云端独立空间</h3>
+            <p v-if="loggedIn">已登录：<strong>{{ user?.name || user?.login }}</strong></p>
+            <p v-else>离线模式（数据仅保存在本机）</p>
+          </div>
+          <span class="config-badge" :style="{ color: loggedIn ? '#10b981' : '#94a3b8' }">
+            <Cloud :size="14" />{{ loggedIn ? '已连接' : '未登录' }}
+          </span>
+        </div>
+        <div class="settings-actions">
+          <template v-if="loggedIn">
+            <Button type="primary" block :loading="syncState.isSyncing" @click="pushToCloud">
+              <template #icon><CloudUpload :size="15" /></template>
+              推送到专属云端空间
+            </Button>
+            <Button block :loading="syncState.isSyncing" @click="pullFromCloud(false)">
+              <template #icon><CloudDownload :size="15" /></template>
+              从云端拉取覆盖本地
+            </Button>
+          </template>
+          <template v-else>
+            <Button type="primary" block @click="triggerLogin">
+              <template #icon><User :size="15" /></template>
+              使用 GitHub 登录开启同步
+            </Button>
+          </template>
+        </div>
+      </section>
+
       <section class="settings-section">
         <div class="settings-title-row">
           <div>
