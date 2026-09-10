@@ -1,7 +1,7 @@
 <script setup>
 /**
  * @description 用户独立空间认证与云端同步菜单组件：
- * 支持 GitHub OAuth 登录、本地开发模拟登录、云端配置双向同步与登出。
+ * 支持 GitHub OAuth 登录、本地开发模拟登录（仅本地可见）、云端配置双向同步与登出。
  */
 import { ref, onMounted } from "vue";
 import { Button, Modal, Tooltip, Input, message } from "antdv-next";
@@ -12,10 +12,11 @@ import {
   CloudDownload,
   LogOut,
   Check,
-  RefreshCw
+  Info
 } from "lucide-vue-next";
 import { useHomeport } from "../composables/useHomeport.js";
 
+const isDev = import.meta.dev;
 const { user, loggedIn, clear, fetch: fetchSession } = useUserSession();
 const { syncState, pushToCloud, pullFromCloud } = useHomeport();
 
@@ -29,6 +30,21 @@ onMounted(async () => {
   if (loggedIn.value) {
     // 登录用户静默载入云端配置
     pullFromCloud(true);
+  }
+
+  // 检查是否从 GitHub 认证错误返回
+  if (typeof window !== "undefined") {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authError = urlParams.get("auth_error");
+    if (authError) {
+      message.error({
+        content:
+          "GitHub 登录失败：尚未在 Vercel 中配置 NUXT_OAUTH_GITHUB_CLIENT_ID 与 SECRET 环境变量，请查看配置指南。",
+        duration: 8
+      });
+      // 抹除 URL 中的报错参数以保持干净
+      window.history.replaceState({}, "", window.location.pathname);
+    }
   }
 });
 
@@ -133,20 +149,23 @@ async function handleLogout() {
             使用 GitHub 账号一键登录
           </Button>
 
-          <div class="auth-divider">
-            <span>或者（本地开发免配置测试）</span>
-          </div>
+          <!-- 仅在本地开发环境可见，生产环境彻底隐藏 -->
+          <template v-if="isDev">
+            <div class="auth-divider">
+              <span>仅本地开发环境可见</span>
+            </div>
 
-          <div class="dev-login-box">
-            <Input
-              v-model:value="devUsername"
-              placeholder="输入任意测试用户名，如 carl"
-              @press-enter="handleDevLogin"
-            />
-            <Button :loading="devLoading" @click="handleDevLogin">
-              模拟此账号登录
-            </Button>
-          </div>
+            <div class="dev-login-box">
+              <Input
+                v-model:value="devUsername"
+                placeholder="输入测试用户名，如 carl"
+                @press-enter="handleDevLogin"
+              />
+              <Button :loading="devLoading" @click="handleDevLogin">
+                模拟登录
+              </Button>
+            </div>
+          </template>
         </div>
       </div>
     </Modal>

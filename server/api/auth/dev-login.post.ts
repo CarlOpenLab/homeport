@@ -1,4 +1,12 @@
 export default defineEventHandler(async (event) => {
+  // 生产环境直接禁用测试模拟登录接口
+  if (!import.meta.dev) {
+    throw createError({
+      statusCode: 403,
+      statusMessage: "开发模拟接口仅在本地开发环境生效"
+    });
+  }
+
   const body = await readBody(event).catch(() => ({}));
   const username = String(body?.username || "carl").trim() || "carl";
   const userId = `dev_${username.toLowerCase().replace(/[^a-z0-9]/g, "")}`;

@@ -9,6 +9,12 @@ export default defineNuxtConfig({
       password:
         process.env.NUXT_SESSION_PASSWORD ||
         "homeport-super-secret-session-password-32-chars-min"
+    },
+    oauth: {
+      github: {
+        clientId: process.env.NUXT_OAUTH_GITHUB_CLIENT_ID,
+        clientSecret: process.env.NUXT_OAUTH_GITHUB_CLIENT_SECRET
+      }
     }
   },
   css: ["~/assets/styles.css"],
