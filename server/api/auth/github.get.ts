@@ -1,6 +1,14 @@
 export default defineOAuthGitHubEventHandler({
   config: {
-    emailRequired: false
+    emailRequired: false,
+    clientId:
+      process.env.NUXT_OAUTH_GITHUB_CLIENT_ID ||
+      process.env.GITHUB_CLIENT_ID ||
+      "",
+    clientSecret:
+      process.env.NUXT_OAUTH_GITHUB_CLIENT_SECRET ||
+      process.env.GITHUB_CLIENT_SECRET ||
+      ""
   },
   async onSuccess(event, { user }) {
     await setUserSession(event, {
