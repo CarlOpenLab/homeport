@@ -118,6 +118,61 @@ Deploying Homeport to Vercel takes less than 3 minutes:
 
 ---
 
+## 🔐 Extending: Adding More Sign-In Providers
+
+Homeport ships with [nuxt-auth-utils](https://github.com/atinux/nuxt-auth-utils), which bundles around 50 OAuth provider handlers
+(Google, Microsoft, Apple, Discord, GitLab, Gitea, Keycloak/Auth0/Okta/Cognito, and more). Adding a provider requires no schema or data
+changes: one `server/api/auth/<provider>.get.ts` file, its credentials, and a button.
+
+### Identity Mapping
+
+Every sign-in entry point resolves its internal user ID through `resolveUserId()` in `server/utils/identity.ts`.
+The mappings live in cloud KV (Upstash Redis in production, Nitro local storage in development):
+
+| Storage key | Meaning |
+| :--- | :--- |
+| `homeport:identity:<provider>:<providerId>` | Provider identity → internal user ID |
+| `homeport:email:<email>` | Verified email → internal user ID |
+
+Resolution order:
+
+1. Identity already registered → reuse its bound user ID, so switching devices or sign-in methods lands in the same cloud workspace;
+2. Identity unknown but carries a provider-verified email that already belongs to a user → merge into that user;
+3. Brand-new user → generate `<provider>_<providerId>`, identical to the historical `github_<id>` format — **no migration of existing cloud data**.
+
+> ⚠️ Only pass an email to `resolveUserId()` when the provider has confirmed the address is verified. Passing an unverified email lets
+> another account take over an existing workspace.
+
+### Example: Google
+
+```ts
+// server/api/auth/google.get.ts
+export default defineOAuthGoogleEventHandler({
+  async onSuccess(event, { user }) {
+    const userId = await resolveUserId({
+      provider: "google",
+      providerId: user.sub,
+      verifiedEmail: user.email_verified ? user.email : null
+    });
+
+    await setUserSession(event, {
+      user: { id: userId, login: user.email, name: user.name, avatar: user.picture }
+    });
+    return sendRedirect(event, "/");
+  }
+});
+```
+
+1. Create an OAuth client in the Google Cloud Console with `https://<your-domain>/api/auth/google` as the redirect URI;
+2. Add `NUXT_OAUTH_GOOGLE_CLIENT_ID` and `NUXT_OAUTH_GOOGLE_CLIENT_SECRET` to your Vercel environment variables — Nitro maps them to
+   `runtimeConfig.oauth.google` automatically, so `nuxt.config.ts` needs no change;
+3. Add a button in `components/UserMenu.vue` that navigates to `/api/auth/google`.
+
+> Providers without OIDC support (Gitee, WeChat, QQ, DingTalk, Feishu) need their own "redirect to authorize → exchange code in callback" flow,
+> but they end with the same `resolveUserId()` plus `setUserSession()` pair, reusing the whole identity-mapping and workspace-isolation path.
+
+---
+
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).

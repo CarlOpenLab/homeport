@@ -115,6 +115,58 @@ pnpm run preview
 
 ---
 
+## 🔐 扩展：接入更多第三方登录
+
+项目内置 [nuxt-auth-utils](https://github.com/atinux/nuxt-auth-utils) 约 50 个 OAuth Provider 处理器（Google、Microsoft、Apple、Discord、GitLab、Gitea、Keycloak/Auth0/Okta/Cognito 等），
+新增登录方式无需改动数据结构：新增一个 `server/api/auth/<provider>.get.ts`、配置凭据、再加一个按钮即可。
+
+### 身份映射机制
+
+所有登录入口统一通过 `server/utils/identity.ts` 的 `resolveUserId()` 解析内部用户 ID，
+映射关系存放在云端 KV（生产环境 Upstash Redis，本地开发降级到 Nitro 内置存储）：
+
+| 存储键 | 含义 |
+| :--- | :--- |
+| `homeport:identity:<provider>:<providerId>` | 第三方身份 → 内部用户 ID |
+| `homeport:email:<email>` | 已验证邮箱 → 内部用户 ID |
+
+解析顺序：
+
+1. 身份已登记 → 复用已绑定的用户 ID，换设备或换登录方式都落到同一个云端空间；
+2. 身份未登记但携带 Provider 已验证的邮箱，且该邮箱已归属某用户 → 自动并入该用户；
+3. 全新用户 → 生成 `<provider>_<providerId>`，与历史 `github_<id>` 格式完全一致，**存量云端数据无需迁移**。
+
+> ⚠️ 仅当 Provider 明确确认邮箱归属时，才可把邮箱传给 `resolveUserId()`；传入未验证邮箱会导致账号被他人合并。
+
+### 以 Google 为例
+
+```ts
+// server/api/auth/google.get.ts
+export default defineOAuthGoogleEventHandler({
+  async onSuccess(event, { user }) {
+    const userId = await resolveUserId({
+      provider: "google",
+      providerId: user.sub,
+      verifiedEmail: user.email_verified ? user.email : null
+    });
+
+    await setUserSession(event, {
+      user: { id: userId, login: user.email, name: user.name, avatar: user.picture }
+    });
+    return sendRedirect(event, "/");
+  }
+});
+```
+
+1. 在 Google Cloud Console 创建 OAuth 客户端，回调地址填 `https://你的域名/api/auth/google`；
+2. 在 Vercel 环境变量添加 `NUXT_OAUTH_GOOGLE_CLIENT_ID` 与 `NUXT_OAUTH_GOOGLE_CLIENT_SECRET`（Nitro 会自动映射到 `runtimeConfig.oauth.google`，无需修改 `nuxt.config.ts`）；
+3. 在 `components/UserMenu.vue` 中增加一个跳转到 `/api/auth/google` 的登录按钮。
+
+> 对于不支持 OIDC 的国内 Provider（Gitee、微信、QQ、钉钉、飞书），需自行实现「跳转授权 → callback 换取用户信息」两步，
+> 最终同样调用 `resolveUserId()` 与 `setUserSession()`，即可复用整套身份映射与云端空间隔离逻辑。
+
+---
+
 ## 📄 开源许可证
 
 本项目基于 [MIT License](LICENSE) 开源。

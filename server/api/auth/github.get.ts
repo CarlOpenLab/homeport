@@ -23,9 +23,16 @@ export default eventHandler(async (event) => {
       ...(clientSecret ? { clientSecret: String(clientSecret).trim() } : {})
     },
     async onSuccess(event, { user }) {
+      // GitHub 只会把账号已验证的邮箱设为公开邮箱，因此 /user 返回的 email 可安全用于跨登录方式的身份合并
+      const userId = await resolveUserId({
+        provider: "github",
+        providerId: user.id,
+        verifiedEmail: user.email
+      });
+
       await setUserSession(event, {
         user: {
-          id: `github_${user.id}`,
+          id: userId,
           login: user.login,
           name: user.name || user.login,
           avatar: user.avatar_url

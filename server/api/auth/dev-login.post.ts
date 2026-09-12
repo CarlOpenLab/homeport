@@ -9,7 +9,10 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody(event).catch(() => ({}));
   const username = String(body?.username || "carl").trim() || "carl";
-  const userId = `dev_${username.toLowerCase().replace(/[^a-z0-9]/g, "")}`;
+  const userId = await resolveUserId({
+    provider: "dev",
+    providerId: username.toLowerCase().replace(/[^a-z0-9]/g, "") || "carl"
+  });
 
   await setUserSession(event, {
     user: {
